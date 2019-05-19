@@ -1,0 +1,191 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <title>mole.html</title>
+    <script type="text/javascript" src="./simpleGame.js"></script>
+    <script type="text/javascript">
+        var moles;
+        var NUM_MOLES = 7;
+        var scene;
+        var scoreboard;
+        var joy;
+        var hits = 0;
+        var lives = 3;
+        var highScore = 0;
+        var leaves;
+        function startTime() {
+
+            var timeOut = 0;
+            var timer = 60 , minutes, seconds;
+            setInterval(function () {
+                minutes = parseInt(timer / 60, 10)
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                document.getElementById("timeGame").innerHTML = 'time :'+minutes + ":" + seconds;
+                if (timer === timeOut) {
+                    alert("Play again...");
+                    document.location.href = "";
+                }
+                if (--timer < 0) {
+                    timer = 60 * 5;
+                }
+            }, 1000);
+        }
+        function MoleType() {
+            let check = (Math.random() * 10 | 0) % 2 === 0
+            if (check) {
+                return 'Bandit'
+            } else {
+                return ''
+            }
+        }
+        function Mole() {
+            tMole = new Sprite(scene, "moleDown.png", 100, 100);
+            UP = 1;
+            DOWN = 0;
+            tMole.state = DOWN;
+            tMole.imgUp = "molePerson.png";
+            tMole.imgBandit = 'moleBandit.png'
+            tMole.imgPerson = 'molePerson.png'
+            tMole.imgDown = "moleDown.png";
+            tMole.popupPerc = .01;  //likelihood a down mole will pop up
+            tMole.popupLength = 3;  //how long (in seconds) a mole stays up
+            tMole.timer = new Timer();
+            tMole.setSpeed(0);
+
+            tMole.setState = function (state, type) {
+                this.state = state;
+                this.type = type
+                if (state == UP) {
+                    if (type === 'Bandit') {
+                        this.setImage(this.imgBandit);
+                    } else {
+                        this.setImage(this.imgPerson);
+                    }
+                    //this.setImage(this.imgUp);
+                    this.timer.reset();
+                } else {
+                    this.setImage(this.imgDown);
+                } // end if
+            } // end setState
+
+            tMole.swapState = function () {
+                if (this.state == UP) {
+                    this.setState(DOWN, '')
+                } else {
+                    this.setState(UP, MoleType());
+                } // end if
+            } // end swapState
+
+            tMole.checkClick = function () {
+                if (this.isClicked()) {
+                    //only worry about clicks if state is UP
+                    if (this.state == UP) {
+                        console.log(this.type)
+                        if (this.type === 'Bandit') {
+                            hits++;
+                        } else {
+                            hits--;
+                            lives--;
+                        }
+                        if (lives < 0) {
+                            //saveHighScore();
+                            alert('Point : '+hits+"   Play again...");
+                            document.location.href = "";
+                        }
+                        this.setState(DOWN, '');
+                    }
+                }
+            }
+
+            tMole.checkTime = function () {
+                if (this.state == DOWN) {
+                    randVal = Math.random();
+                    if (randVal < this.popupPerc) {
+                        this.setState(UP, MoleType());
+                    }
+                } else {
+                    time = this.timer.getElapsedTime();
+                    if (time > this.popupLength) {
+                        this.setState(DOWN, '');
+                    } 
+                } 
+            } 
+
+            return tMole;
+        } 
+
+        function getHighScore() {
+            highScore = parseInt(localStorage.getItem("moleHighScore"));
+            console.log("highScore: ", highScore);
+            if (highScore == "null"
+                || highScore == null
+                || isNaN(highScore)) {
+                highScore = 0;
+            }
+        }
+        function updateScore() {
+            result = "Point: " + hits + ", Lives: " + lives;
+            scoreboard.innerHTML = result;
+        } 
+        function makeMoles() {
+            let position = [100, 510, 200, 510, 300, 510, 400, 510, 500, 510, 600, 510, 325, 420]
+            console.log((Math.random() * 10 | 0) % 2 === 0)
+            moles = new Array(NUM_MOLES);
+            let index = 0
+            for (i = 0; i < NUM_MOLES; i++) {
+                moles[i] = new Mole();
+                index = index + 2
+                x = position[index - 2]
+                y = position[index - 1]
+                moles[i].setPosition(x, y);
+            }
+        }
+
+        function updateMoles() {
+            for (i = 0; i < NUM_MOLES; i++) {
+                moles[i].checkClick();
+                moles[i].checkTime();
+                moles[i].update();
+            }
+        }
+
+        function init() {
+            scoreboard = document.getElementById("scoreboard");
+            scene = new Scene();
+            console.log(MoleType())
+            leaves = new Sprite(scene, "background.jpg", 1200, 800);
+            leaves.setSpeed(0);
+            startTime();
+            getHighScore();
+
+            if (scene.touchable) {
+                joy = new Joy();
+            }
+            makeMoles();
+            scene.start();
+        }
+
+        function update() {
+            scene.clear();
+            leaves.update();
+            updateMoles();
+            updateScore();
+        }
+
+    </script>
+</head>
+
+<body onload="init()">
+    <div>
+        <div id='timeGame'>time :   01:00</div>
+        <div id="scoreboard">Point: 0, Lives: 3</div>
+    </div>
+</body>
+
+</html>
